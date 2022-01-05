@@ -1,0 +1,42 @@
+# This yaml will build a small cluster to run builds on.
+apiVersion: run.tanzu.vmware.com/v1alpha2
+kind: TanzuKubernetesCluster
+metadata:
+  name: tbs-1
+  namespace: tbs # << (optional) Update
+
+spec:
+  topology:                           
+    controlPlane:
+      replicas: 1
+      vmClass: best-effort-large
+      storageClass: tkgs-storage-policy # << Update
+      tkr:  
+        reference:
+          name: v1.21.6---vmware.1-tkg.1.b3d708a # << (optional) Update
+    nodePools:
+    - name: tbs-1-np1 
+      replicas: 1
+      vmClass: best-effort-xlarge
+      storageClass: tkgs-storage-policy # << Update
+      volumes: 
+        - name: tbs-containerd
+          mountPath: /var/lib/containerd
+          capacity:
+            storage: 55G
+          storageClass: tkgs-storage-policy # << Update
+      tkr:  
+        reference:
+          name: v1.21.6---vmware.1-tkg.1.b3d708a # << (optional) Update
+  settings:
+    storage:
+      defaultClass: tkgs-storage-policy # << Update
+    network:
+      cni:
+        name: antrea
+      pods:
+        cidrBlocks: ["172.20.128.0/17"] # << (optional) Update
+      trust: 
+        additionalTrustedCAs:
+          - name: home-ca # Update line below. This is the base64 encoded public key of either the registry or the CA which sign the registry key
+            data: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUVjVENDQXRtZ0F3SUJBZ0lRWVQvV3NxZ2VyWGhpRHFJZ1RUd1NLREFOQmdrcWhraUc5dzBCQVFzRkFEQlIKTVI0d0hBWURWUVFLRXhWdGEyTmxjblFnWkdWMlpXeHZjRzFsYm5RZ1EwRXhFekFSQmdOVkJBc01DbTFoZEhSQQpaR1Z5WldzeEdqQVlCZ05WQkFNTUVXMXJZMlZ5ZENCdFlYUjBRR1JsY21Wck1CNFhEVEl4TURreE56RXhOVGt4Ck1Gb1hEVE14TURreE56RXhOVGt4TUZvd1VURWVNQndHQTFVRUNoTVZiV3RqWlhKMElHUmxkbVZzYjNCdFpXNTAKSUVOQk1STXdFUVlEVlFRTERBcHRZWFIwUUdSbGNtVnJNUm93R0FZRFZRUUREQkZ0YTJObGNuUWdiV0YwZEVCawpaWEpsYXpDQ0FhSXdEUVlKS29aSWh2Y05BUUVCQlFBRGdnR1BBRENDQVlvQ2dnR0JBTHpDaFQ5RDg2QWNzeTN6CndRTGR3ZGNNSUZ0WHlDUStrNk9WTEFINFByU3dLT0psckhWbVM5Qkw5YXAvb1pWa2NOQ1lpL1h0Z2FQdFpjSXkKSlQ2Wm9wZVlkbzF1c2RUMVBLUDNNQkdPRWpMNWxsbURoais2K0hRaTNXZWFqbnhzVUlkYmtVa29HSFBFcHNKNwp5eU9PVUhWZWwxV3crTGk0Z3J1cDNkOVJSSDZsSld2QnBZSFlYUzZGczlPZU92dnNlMHFBVkRsYTJpZzIzYlh1CmxzZmN2MkxxUkRSMmJrUGltTkpPT2FkWC85cmhqS2NENFZLajEzQlJkcXFmMXRiMkNaR1B5bStSTERpY3pyQngKczl3a3pad0wwMmhvcDJ2aGZVVUZzclNCSFg0UWZvbWU5cThxeG5OQ0sxRGcvS05Oa2J1Sks0V2I5bjcveDQ3MApXeDhocjJaMWZjcHdRa0tlR0NGek5CbzBrNWsrQzhoaEI3RENoV2F2dy9ZYWlzcDJReVNPVEpiWVZPWE4yb2pBCndLTmZoM1U2eGpRdEVrdHFCUUpicm5lRHBZUEhUN3A2dFUzODNReG1Ed3MwY1ZDd3prVG02cSswMWtKeWQ4ZkkKd1RKRGd2NmdvT2Z2dmNrL2tDUGJkWHlxaUlxc1hlSXFORFhVdWcrMEpJK1F6b05hOXdJREFRQUJvMFV3UXpBTwpCZ05WSFE4QkFmOEVCQU1DQWdRd0VnWURWUjBUQVFIL0JBZ3dCZ0VCL3dJQkFEQWRCZ05WSFE0RUZnUVVzRWNKClZuTTBEUmlISkUwbFUybVdsZENFN1lrd0RRWUpLb1pJaHZjTkFRRUxCUUFEZ2dHQkFLK0oyWGlBNHRjMmhyYnYKbENKR0xIQmoyaW5wa2xwT1ZIdjE0T0ppcHl5MGh0UDVoeXVCRVMwdGNHUkxJYmcxelNOZ1d4MHJSb0ZhMzIxdQpsOXY5NjFxcEdtV1JzSVJwZmZ0SmVPRkNVRXpvTHo1Q056eEkyY203QldCL2YrUkhYNzEyNkVVenN1NjdxRytqCllJMDdTaTdrZ3dzR3d6Y3lNbEQ3d3JKTnROdUYyUGdvbUlxQ1VaMU8wSDV2RVRjNmFMTzAvUitVTFFwemJVY00Ka1hEenhKZmtycjRtMUpMWnVGVmQ4M0dYTnpNTnNEc255YkJVckYvKy8ySDIwUVJvM0hHRVFOZEZxRFAzUXhKOQppZGttQTZjRVN2NEw3ZEJOdDU1bkJMN1Q5R1JUTGVFaGF0b1BTY3d6eVVDN2IwOU1yWnYxSWd4d3pVQVZLZmtLCm9hU2w1VUtHRWNXMUx4VmlWcHZjNWVGa0FWYkZLY1ZYb3VscFI1RGlwSmt2VUdiQlBveUU0N2lIQTBLNGJvcmEKZkRsOWZUdzNlSWxzeGEwTXgzU0dEc3QxYnFHV0VqS28velVrSHpRTDRnaFFSTC9NZk1Ua1pMZE9HS3NuT0ZZMQo3VjN3R29VMzE4QkFpQW90eDJ5dGFidDdaNjdZU3M4RW04Z0hhc2o5YWhKVnVKQk5qdz09Ci0tLS0tRU5EIENFUlRJRklDQVRFLS0tLS0K
