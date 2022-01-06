@@ -1,5 +1,5 @@
 # Install Steps
-These steps follow the [documented process](https://docs.vmware.com/en/Tanzu-Build-Service/1.3/vmware-tanzu-build-service-v13/GUID-installing.html#relocate-images-to-a-registry) to install TBS 1.3 based on images in a local registry. 
+These steps follow the [documented process](https://docs.vmware.com/en/Tanzu-Build-Service/1.3/vmware-tanzu-build-service-v13/GUID-installing.html#relocate-images-to-a-registry) to install TBS 1.3.4 based on images in a local registry. 
 
 ## Create a Cluster
 Note `/var/lib/containerd` must be extended to allow for a large image cache.</br>
@@ -66,7 +66,17 @@ Set the registry Secret.
 kp secret create my-registry-creds --registry $REGISTRY_ENDPOINT --registry-user $REGISTRY_USERNAME
 ```
 
-Build a test app. Into 
+Golang test app
 ```
-kp image create test-image --tag ${REGISTRY_APPS_PATH}/test-app --git https://github.com/buildpacks/samples --sub-path ./apps/java-maven --wait
+kp image create test-image-go --tag ${REGISTRY_APPS_PATH}/test-app-go --git https://github.com/laidbackware/tanzu-build-service-experiments --sub-path ./example-apps/golang --wait
+```
+
+Java test app
+```
+kp image create my-image --tag ${REGISTRY_APPS_PATH}/test-app --git https://github.com/buildpacks/samples --sub-path ./apps/java-maven --wait
+```
+
+Python test app
+```
+kp image create test-image-python --tag ${REGISTRY_APPS_PATH}/test-app-python --git https://github.com/laidbackware/tanzu-build-service-experiments --sub-path ./example-apps/python --wait
 ```

@@ -1,0 +1,4 @@
+php:
+  version: 7.2.*
+  # options are: php-server, httpd, nginx. default: php-server
+  webserver: php-server
