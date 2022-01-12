@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
-	"github.com/stretchr/testify/assert"
+	// "github.com/stretchr/testify/assert"
 )
 
 func TestHelloword(t *testing.T) {
@@ -19,8 +19,12 @@ func TestHelloword(t *testing.T) {
 	handler.ServeHTTP(rr, req)
 
 	expected_status := http.StatusOK
-	assert.Equal(t, rr.Code, expected_status, "handler returned wrong status code: got %v want %v", rr.Code, expected_status)
-	
+	if rr.Code != expected_status {
+		t.Fatalf("handler returned wrong status code: got %v want %v", rr.Code, expected_status)
+	}
+
 	expected_text := "Hello World"
-	assert.HTTPBodyContains(t, helloWorld, "GET", "/", nil, expected_text ,"handler returned wrong status code: got %v want %v",rr.Code, expected_text)
+	if rr.Body.String() != expected_text {
+		t.Fatalf("handler returned wrong status code: got %v want %v",rr.Code, expected_text)
+	}
 }
