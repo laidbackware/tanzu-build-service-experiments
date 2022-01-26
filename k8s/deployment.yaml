@@ -1,0 +1,22 @@
+#@ load("@ytt:data", "data")
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: golang-test-deployment
+  labels:
+    app: golang-test
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: golang-test
+  template:
+    metadata:
+      labels:
+        app: golang-test
+    spec:
+      containers:
+      - name: golang-test
+        image: #@ data.values.image_path
+        ports:
+        - containerPort: 80
