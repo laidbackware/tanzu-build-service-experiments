@@ -1,5 +1,5 @@
 # Install Steps
-These steps follow the [documented process](https://docs.vmware.com/en/Tanzu-Build-Service/1.3/vmware-tanzu-build-service-v13/GUID-installing.html#relocate-images-to-a-registry) to install TBS 1.3.4 based on images in a local registry. 
+These steps follow the [documented process](https://docs.vmware.com/en/Tanzu-Build-Service/1.3/vmware-tanzu-build-service-v13/GUID-installing.html#relocate-images-to-a-registry) to install TBS 1.4.2 based on images in a local registry. 
 
 ## Create a Cluster
 Note `/var/lib/containerd` must be extended to allow for a large image cache.</br>
@@ -38,24 +38,25 @@ export TANZU_NET_PASSWORD=####
 
 Import TBS bundle into a local registry.
 ```
-imgpkg copy -b "registry.tanzu.vmware.com/build-service/bundle:1.3.4" --to-repo ${REGISTRY_TBS_PATH}/dependencies
+imgpkg copy -b "registry.tanzu.vmware.com/build-service/bundle:1.4.2" --to-repo ${REGISTRY_TBS_PATH}/dependencies
 ```
 Pull the bundle into the local temp directory.
 ```
-imgpkg pull -b "${REGISTRY_TBS_PATH}/dependencies:1.3.4" -o /tmp/bundle
+imgpkg pull -b "${REGISTRY_TBS_PATH}/dependencies:1.4.2" -o /tmp/bundle
 ```
 
 Install the TBS kapp in the cluster.
 ```
-ytt -f /tmp/bundle/values.yaml \
-    -f /tmp/bundle/config/ \
+ytt -f /tmp/bundle/config/ \
     -f /home/matt/workspace/secrets/certs/rootCA.pem \
 	-v kp_default_repository="${REGISTRY_TBS_PATH}/dependencies" \
 	-v kp_default_repository_username=$REGISTRY_USERNAME \
 	-v kp_default_repository_password=$REGISTRY_PASSWORD \
-	-v pull_from_kp_default_repo=true \
+	--data-value-yaml pull_from_kp_default_repo=true \
 	-v tanzunet_username="$TANZU_NET_USERNAME" \
 	-v tanzunet_password="$TANZU_NET_PASSWORD" \
+	-v descriptor_name='full' \
+	--data-value-yaml enable_automatic_dependency_updates=true \
 	| kbld -f /tmp/bundle/.imgpkg/images.yml -f- \
 	| kapp deploy -a tanzu-build-service -f- -y
 ```
@@ -73,7 +74,7 @@ kp image create test-image-go --tag ${REGISTRY_APPS_PATH}/test-app-go --git http
 
 Java test app
 ```
-kp image create my-image --tag ${REGISTRY_APPS_PATH}/test-app --git https://github.com/buildpacks/samples --sub-path ./apps/java-maven --wait
+kp image create my-image --tag ${REGISTRY_APPS_PATH}/test-app-java --git https://github.com/buildpacks/samples --sub-path ./apps/java-maven --wait
 ```
 
 Python test app

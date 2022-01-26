@@ -1,0 +1,28 @@
+apiVersion: tekton.dev/v1beta1
+kind: PipelineRun
+metadata:
+  generateName: golang-example-pl-
+spec:
+  pipelineRef:
+    name: golang-pipeline
+
+  serviceAccountName: pipeline-sa
+
+  params:
+  - name: application-name
+    value: golang-example
+  - name: application-git-url
+    value: github.com/laidbackware/tanzu-build-service-experiments
+  - name: application-git-revision
+    value: main
+  - name: application-base-dir
+    value: example-apps/golang
+  - name: registry-path
+    value: harbor.lab/test-apps
+  - name: build-namespace
+    value: tbs
+
+  workspaces:
+  - name: source
+    persistentVolumeClaim:
+      claimName: pipeline-pvc

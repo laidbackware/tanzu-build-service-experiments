@@ -1,0 +1,37 @@
+---
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: apply-deployment
+  labels:
+    app.kubernetes.io/version: "0.1"
+  annotations:
+    tekton.dev/pipelines.minVersion: "0.21.0"
+    tekton.dev/tags: apply-deploy
+    tekton.dev/displayName: "apply-deploy"
+    tekton.dev/platforms: "linux/amd64"  
+spec:
+  description: >-
+    Interpolate the image path into the deployment manifest
+    Apply manifest via kubectl
+
+  params:
+    - name: DEPLOYMENT_MANIFEST
+      description: "Path to deployment manifest"
+    - name: IMAGE_PATH
+      description: "Full registry image path"
+
+  steps:
+    - name: apply-deployment
+      image: kpack/kp:0.4.2
+      script: |
+        #!/bin/bash
+
+        set -euxo pipefail
+
+        ytt -f "$(workspaces.source.path)/$(params.DEPLOYMENT_MANIFEST)" \
+          -v image_path="$(params.IMAGE_PATH)" | kubectl apply -f-
+
+  workspaces:
+    - name: source
+      description: Directory where application source is located.

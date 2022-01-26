@@ -1,0 +1,87 @@
+---
+apiVersion: tekton.dev/v1beta1
+kind: Pipeline
+metadata:
+  name: golang-pipeline
+spec:
+  params:
+  - name: application-name
+    type: string
+  - name: application-git-url
+    type: string
+  - name: application-git-revision
+    type: string
+  - name: application-base-dir
+    default: example-apps/golang
+    type: string
+  - name: registry-path
+    type: string
+  - name: deployment-manifest-path
+    default: k8s/deployment.yaml
+    type: string
+  - name: build-namespace
+    type: string
+  
+  workspaces:
+  - name: source
+  
+  tasks:
+  - name: application-git-clone
+    taskRef:
+      name: git-clone
+    params:
+    - name: url
+      value: "https://$(params.application-git-url).git"
+    - name: revision
+      value: $(params.application-git-revision)
+    workspaces:
+    - name: output
+      workspace: source
+
+  - name: run-go-tests
+    runAfter:
+      - application-git-clone
+    taskRef:
+      name: golang-test
+    params:
+    - name: package
+      value: $(params.application-git-url)
+    - name: packages
+      value: ./...
+    workspaces:
+    - name: source
+      workspace: source
+  
+  - name: kp-image-save
+    runAfter:
+      - run-go-tests
+    taskRef:
+      name: kp-image-save
+    params:
+    - name: IMAGE_NAME
+      value: "$(params.application-name)-$(params.application-git-revision)"
+    - name: SOURCE_SUBPATH
+      value: $(params.application-base-dir)
+    - name: REGISTRY_PATH
+      value: "$(params.registry-path)/$(params.application-name)"
+    - name: REGISTRY_IMAGE_TAG
+      value: $(params.application-git-revision)
+    - name: BUILD_NAMESPACE
+      value: $(params.build-namespace)
+    workspaces:
+    - name: source
+      workspace: source
+
+  - name: apply-deployment
+    runAfter:
+    - kp-image-save
+    taskRef:
+      name: apply-deployment
+    params:
+      - name: DEPLOYMENT_MANIFEST
+        value: $(params.deployment-manifest-path)
+      - name: IMAGE_PATH
+        value: $(tasks.kp-image-save.results.built-registry-path)
+    workspaces:
+    - name: source
+      workspace: source

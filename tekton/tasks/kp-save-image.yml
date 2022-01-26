@@ -1,0 +1,73 @@
+---
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: kp-image-save
+  labels:
+    app.kubernetes.io/version: "0.1"
+  annotations:
+    tekton.dev/categories: Image Build, Security
+    tekton.dev/pipelines.minVersion: "0.21.0"
+    tekton.dev/tags: kp-image-save
+    tekton.dev/displayName: "kpack image save"
+    tekton.dev/platforms: "linux/amd64"  
+spec:
+  description: >-
+    Trigger KP CLI image save command using source code as input
+    Watch build process to completion
+    Output the full registry image path
+
+  params:
+    - name: SOURCE_SUBPATH
+      description: "Base directory to build from"
+      default: "."
+    - name: IMAGE_NAME
+      description: "prefix for image name"
+    - name: REGISTRY_PATH
+      description: "Full image path"
+    - name: REGISTRY_IMAGE_TAG
+      description: "Image tag"
+    - name: BUILD_NAMESPACE
+      description: "Namespace used to build image"
+      default: ""
+
+  steps:
+    - name: kp-save-image-command
+      image: kpack/kp:0.4.2
+      script: |
+        #!/bin/bash
+
+        set -euxo pipefail
+
+        # Set contexts from local service account for kp-cli
+        kubectl config set-cluster tbs --server=https://kubernetes.default \
+          --certificate-authority=/var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+        kubectl config set-context tbs --cluster=tbs
+        kubectl config set-credentials tbs-user \
+          --token=$(cat /var/run/secrets/kubernetes.io/serviceaccount/token)
+        kubectl config set-context tbs --user=tbs-user \
+          --namespace=$(cat /var/run/secrets/kubernetes.io/serviceaccount/namespace)
+        kubectl config use-context tbs
+
+        export build_command="kp image save $(params.IMAGE_NAME) \
+          --tag $(params.REGISTRY_PATH):$(params.REGISTRY_IMAGE_TAG) \
+          --local-path $(workspaces.source.path)/$(params.SOURCE_SUBPATH) \
+          --registry-verify-certs=false --output yaml"
+        
+        if [ -z $(params.BUILD_NAMESPACE) ]; then
+          export build_command="$build_command --namespace=$(params.BUILD_NAMESPACE)"
+        fi
+
+        image_spec=$($build_command)
+        echo "$image_spec"
+        image_ref=$(echo "$image_spec" | grep ' latestImage: ' | sed 's/.*latestImage: //')
+
+        echo $image_ref | tee /tekton/results/built-registry-path
+
+  workspaces:
+    - name: source
+      description: Directory where application source is located.
+  
+  results:
+    - name: built-registry-path
+      description: The full regisry path of the built image.

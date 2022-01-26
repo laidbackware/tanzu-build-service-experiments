@@ -6,7 +6,7 @@ metadata:
   labels:
     app: golang-test
 spec:
-  replicas: 3
+  replicas: 1
   selector:
     matchLabels:
       app: golang-test
