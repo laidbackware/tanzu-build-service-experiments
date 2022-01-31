@@ -23,18 +23,24 @@ kubectl apply -f tekton/dashboard/dashboard-ingress.yml
 
 ## Pipeline setup
 
+All commands should be run from the tekton directory.
+
 ### Export env vars
 ```
 export REGISTRY_USERNAME=admin
 export REGISTRY_PASSWORD=####
 export REGISTRY_ENDPOINT=harbor.lab
-export PIPELINE_NAMESPACE=tbs
+export PIPELINE_NAMESPACE=tbs-tekton
+```
+
+### Dependent Resources
+```
+kubectl apply -f dependencies
 ```
 
 ### Git Secret
 
 ```
-kubectl create ns $PIPELINE_NAMESPACE
 # Update $HOME/.ssh/git_key to location of git private key
 kubectl create secret generic ssh-key --from-file=ssh-privatekey=$HOME/.ssh/git_key --type kubernetes.io/ssh-auth -n $PIPELINE_NAMESPACE
 kubectl annotate secret ssh-key tekton.dev/git-0='github.com' -n $PIPELINE_NAMESPACE
@@ -42,34 +48,30 @@ kubectl annotate secret ssh-key tekton.dev/git-0='github.com' -n $PIPELINE_NAMES
 
 ### Reg Secret
 ```
+kp secret create my-registry-creds --registry $REGISTRY_ENDPOINT --registry-user $REGISTRY_USERNAME -n $PIPELINE_NAMESPACE
 kubectl create secret docker-registry regcred --docker-server=$REGISTRY_ENDPOINT --docker-username=$REGISTRY_USERNAME --docker-password=$REGISTRY_PASSWORD -n $PIPELINE_NAMESPACE
 ```
 
-### Dependent Resources
-```
-kubectl apply -f dependencies/service_account.yml -n $PIPELINE_NAMESPACE
-kubectl apply -f dependencies/pvc.yml -n $PIPELINE_NAMESPACE
-```
 
 ### Canned tasks
 ```
-kubectl apply -f https://raw.githubusercontent.com/tektoncd/catalog/main/task/golang-test/0.2/golang-test.yaml
-kubectl apply -f https://raw.githubusercontent.com/tektoncd/catalog/main/task/git-clone/0.5/git-clone.yaml
+kubectl apply -f https://raw.githubusercontent.com/tektoncd/catalog/main/task/golang-test/0.2/golang-test.yaml -n $PIPELINE_NAMESPACE
+kubectl apply -f https://raw.githubusercontent.com/tektoncd/catalog/main/task/git-clone/0.5/git-clone.yaml -n $PIPELINE_NAMESPACE
 ```
 
 ### Local tasks
 ```
-kubectl apply -f tekton/tasks
+kubectl apply -f tasks -n $PIPELINE_NAMESPACE
 ```
 
 ### Apply pipeline
 ```
-kubectl apply -f tekton/pipelines/golang-pipeline.yml
+kubectl apply -f pipelines/golang-pipeline.yml -n $PIPELINE_NAMESPACE
 ```
 
 ### Create a pipeline run
 Runs must be created to allow name to be generated.</br>
 Update the PipelineRun file `tekton\pipelines\golang-pipeline-run.yml` to ensure the values reflect your environment.
 ```
-kubectl create -f tekton/pipelines/golang-pipeline-run.yml
+kubectl create -f pipelines/golang-pipeline-run.yml -n $PIPELINE_NAMESPACE
 ```

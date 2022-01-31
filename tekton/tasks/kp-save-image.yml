@@ -10,7 +10,7 @@ metadata:
     tekton.dev/pipelines.minVersion: "0.21.0"
     tekton.dev/tags: kp-image-save
     tekton.dev/displayName: "kpack image save"
-    tekton.dev/platforms: "linux/amd64"  
+    tekton.dev/platforms: "linux/amd64"
 spec:
   description: >-
     Trigger KP CLI image save command using source code as input
@@ -40,9 +40,9 @@ spec:
         set -euxo pipefail
 
         # Set contexts from local service account for kp-cli
-        kubectl config set-cluster tbs --server=https://kubernetes.default \
+        kubectl config set-cluster tbs-cluster --server=https://kubernetes.default \
           --certificate-authority=/var/run/secrets/kubernetes.io/serviceaccount/ca.crt
-        kubectl config set-context tbs --cluster=tbs
+        kubectl config set-context tbs --cluster=tbs-cluster
         kubectl config set-credentials tbs-user \
           --token=$(cat /var/run/secrets/kubernetes.io/serviceaccount/token)
         kubectl config set-context tbs --user=tbs-user \
@@ -52,11 +52,13 @@ spec:
         export build_command="kp image save $(params.IMAGE_NAME) \
           --tag $(params.REGISTRY_PATH):$(params.REGISTRY_IMAGE_TAG) \
           --local-path $(workspaces.source.path)/$(params.SOURCE_SUBPATH) \
-          --registry-verify-certs=false --output yaml"
+          --registry-verify-certs=false --output yaml --wait"
         
         if [ -z $(params.BUILD_NAMESPACE) ]; then
           export build_command="$build_command --namespace=$(params.BUILD_NAMESPACE)"
         fi
+
+        # while sleep 30; do echo thinking; done
 
         image_spec=$($build_command)
         echo "$image_spec"
