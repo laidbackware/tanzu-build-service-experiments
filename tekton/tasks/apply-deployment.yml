@@ -7,13 +7,11 @@ metadata:
     app.kubernetes.io/version: "0.1"
   annotations:
     tekton.dev/pipelines.minVersion: "0.21.0"
-    tekton.dev/tags: apply-deploy
     tekton.dev/displayName: "apply-deploy"
     tekton.dev/platforms: "linux/amd64"  
 spec:
   description: >-
-    Interpolate the image path into the deployment manifest
-    Apply manifest via kubectl
+    Interpolate the image path into the deployment manifest and apply via kubectl
 
   params:
     - name: DEPLOYMENT_MANIFEST

@@ -61,11 +61,13 @@ ytt -f /tmp/bundle/config/ \
 	| kapp deploy -a tanzu-build-service -f- -y
 ```
 
-## Validation
-Set the registry Secret.
+Set the registry Secret in the namespace where TBS is installed.
 ```
 kp secret create my-registry-creds --registry $REGISTRY_ENDPOINT --registry-user $REGISTRY_USERNAME
 ```
+
+
+## Validation
 
 Golang test app
 ```

@@ -7,9 +7,7 @@ This pipeline will:
 All task containers and the deployment will run in the current namespace.</br>
 The build namespace can be customised in the PipelineRun yaml file.
 
-## Tekton Setup
-
-### Install Tekton
+## Install Tekton
 
 ```
 kubectl apply --filename https://storage.googleapis.com/tekton-releases/pipeline/latest/release.yaml
@@ -30,26 +28,29 @@ All commands should be run from the tekton directory.
 export REGISTRY_USERNAME=admin
 export REGISTRY_PASSWORD=####
 export REGISTRY_ENDPOINT=harbor.lab
-export PIPELINE_NAMESPACE=tbs-tekton
+export PIPELINE_NAMESPACE=tbs-tekton-validation
+export GIT_SSH_KEY_LOCATION=$HOME/.ssh/git_key
 ```
 
 ### Dependent Resources
+Use `ytt` to inject variables into `service_account.yaml`.
 ```
-kubectl apply -f dependencies
+ytt -f dependencies/service_account.yml \
+  -v pipeline_namespace="${PIPELINE_NAMESPACE:?}" | kubectl apply -f-
+kubectl apply -f dependencies/pvc.yml -n $PIPELINE_NAMESPACE
 ```
 
 ### Git Secret
 
 ```
 # Update $HOME/.ssh/git_key to location of git private key
-kubectl create secret generic ssh-key --from-file=ssh-privatekey=$HOME/.ssh/git_key --type kubernetes.io/ssh-auth -n $PIPELINE_NAMESPACE
+kubectl create secret generic ssh-key --from-file=ssh-privatekey=${GIT_SSH_KEY_LOCATION} --type kubernetes.io/ssh-auth -n $PIPELINE_NAMESPACE
 kubectl annotate secret ssh-key tekton.dev/git-0='github.com' -n $PIPELINE_NAMESPACE
 ```
 
 ### Reg Secret
 ```
 kp secret create my-registry-creds --registry $REGISTRY_ENDPOINT --registry-user $REGISTRY_USERNAME -n $PIPELINE_NAMESPACE
-kubectl create secret docker-registry regcred --docker-server=$REGISTRY_ENDPOINT --docker-username=$REGISTRY_USERNAME --docker-password=$REGISTRY_PASSWORD -n $PIPELINE_NAMESPACE
 ```
 
 

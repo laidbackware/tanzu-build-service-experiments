@@ -8,14 +8,12 @@ metadata:
   annotations:
     tekton.dev/categories: Image Build, Security
     tekton.dev/pipelines.minVersion: "0.21.0"
-    tekton.dev/tags: kp-image-save
     tekton.dev/displayName: "kpack image save"
     tekton.dev/platforms: "linux/amd64"
 spec:
   description: >-
     Trigger KP CLI image save command using source code as input
-    Watch build process to completion
-    Output the full registry image path
+    Watch build process to completion and output the full registry image path
 
   params:
     - name: SOURCE_SUBPATH
@@ -39,6 +37,8 @@ spec:
 
         set -euxo pipefail
 
+        current_namespace=$(cat /var/run/secrets/kubernetes.io/serviceaccount/namespace)
+
         # Set contexts from local service account for kp-cli
         kubectl config set-cluster tbs-cluster --server=https://kubernetes.default \
           --certificate-authority=/var/run/secrets/kubernetes.io/serviceaccount/ca.crt
@@ -46,19 +46,16 @@ spec:
         kubectl config set-credentials tbs-user \
           --token=$(cat /var/run/secrets/kubernetes.io/serviceaccount/token)
         kubectl config set-context tbs --user=tbs-user \
-          --namespace=$(cat /var/run/secrets/kubernetes.io/serviceaccount/namespace)
+          --namespace="${current_namespace}"
         kubectl config use-context tbs
 
         export build_command="kp image save $(params.IMAGE_NAME) \
           --tag $(params.REGISTRY_PATH):$(params.REGISTRY_IMAGE_TAG) \
           --local-path $(workspaces.source.path)/$(params.SOURCE_SUBPATH) \
-          --registry-verify-certs=false --output yaml --wait"
-        
-        if [ -z $(params.BUILD_NAMESPACE) ]; then
-          export build_command="$build_command --namespace=$(params.BUILD_NAMESPACE)"
-        fi
+          --registry-verify-certs=false \
+          --output yaml --wait"
 
-        # while sleep 30; do echo thinking; done
+        # --namespace="${current_namespace}" \
 
         image_spec=$($build_command)
         echo "$image_spec"
@@ -72,4 +69,4 @@ spec:
   
   results:
     - name: built-registry-path
-      description: The full regisry path of the built image.
+      description: The full registry path of the built image.
